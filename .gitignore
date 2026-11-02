@@ -21,3 +21,7 @@ uploads/
 tmp/
 temp/
 cache/
+
+# Generated Java output
+out/
+*.class

@@ -1,41 +1,32 @@
-# Bank-Project
+# Simulador bancário Java
 
-Simulador bancário de console com contas corrente e poupança, depósitos, saques e transferências.
+Contas corrente e poupança, depósitos, saques, transferências e extrato com histórico.
 
-## Funcionalidades verificadas
+## Comportamento
 
-- Cadastro de titular.
-- Conta corrente e poupança.
-- Depósito, saque, transferência e extrato.
+- Dinheiro com `BigDecimal`, sem arredondamento silencioso de frações de centavo.
+- Rejeição de zero, negativos, NaN, infinito, saldo insuficiente, destino ausente e transferência para a própria conta.
+- Transferências e histórico atualizados em uma seção crítica; falhas de validação preservam os saldos.
+- Números sequenciais únicos durante a execução; CPF validado e mascarado na consulta.
+- Nome completo, data válida, entrada com vírgula ou ponto e encerramento por EOF.
 
-## Operação e arquitetura verificadas
+## Executar e validar
 
-Aplicação Java de console; Conta concentra operações e ContaC/ContaP especializam os extratos. Dados permanecem em memória.
+JDK 17 ou superior para compilar. O JAR é compatível com Java 8 ou superior.
 
-Arquivos principais: `src/com/NunesDevs/Ini.java`, `src/com/NunesDevs/Conta.java`.
-
-### Requisitos e execução
-
-JDK com javac; terminal interativo.
-
-```text
-javac -encoding UTF-8 -d build src/com/NunesDevs/*.java
-java -cp build com.NunesDevs.Ini
+```powershell
+./build.ps1 -Test -Package
+java -jar build/Bank-Project.jar
 ```
 
+Testes sem bibliotecas externas: 25 verificações de operações, valores inválidos, precisão, identificação e histórico. A interface usa uma entrada por operação; na transferência você escolhe a conta de origem, e a outra conta recebe o valor.
 
+## Limites
 
-### Testes e estado
+Dados e histórico existem apenas em memória e são descartados ao sair. Os números de conta reiniciam em cada processo. É um exercício de domínio, sem persistência, autenticação, integração bancária ou movimentação de dinheiro real. Use apenas dados de teste.
 
-Não foi identificada uma suíte automatizada específica para os fluxos descritos; valide a execução e os casos de borda antes de publicar.
+## Manutenção e licença
 
-Estado: projeto de estudo/experimental. Deploy ativo não foi confirmado nesta revisão.
+Código autoral licenciado sob a [MIT](LICENSE). Dependências, ferramentas e materiais de terceiros mantêm suas próprias licenças e avisos.
 
-### Limitações conhecidas
-
-- Não valida saldo insuficiente ou valores negativos nas operações.
-- Não há suíte de testes ou build Maven/Gradle.
-
-### Licença e manutenção
-
-Nenhum arquivo de licença foi identificado nesta revisão; não foi adicionada uma nova licença. Atualize comandos e limitações quando houver mudança de comportamento.
+Decisões e continuidade: [PROJECT_MEMORY.md](PROJECT_MEMORY.md).

@@ -1,104 +1,90 @@
 package com.NunesDevs;
 
-import java.util.Random;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
-public abstract class Conta implements IConta{
+/** Conta de um simulador em memória. Operações monetárias usam centavos exatos. */
+public abstract class Conta implements IConta {
+    private static final AtomicLong SEQUENCIA = new AtomicLong(100000);
+    private static final Object OPERACOES = new Object();
+    private final int agencia = 1;
+    private final String numero;
+    private final Cliente cliente;
+    private BigDecimal saldo = new BigDecimal("0.00");
+    private final List<String> historico = new ArrayList<>();
 
-
-    private static final int AGENCIA = 0001;
-
-    protected int agencia;
-    protected String numero;
-    protected double saldo;
-    protected Cliente cliente;
-
-    Random gerador = new Random();
-
-    int n1 = 1 * gerador.nextInt(9);
-    int n2 = 1 * gerador.nextInt(9);
-    int n3 = 1 * gerador.nextInt(9);
-    int n4 = 1 * gerador.nextInt(9);
-    int n5 = 1 * gerador.nextInt(9);
-    int d1 = 1 * gerador.nextInt(9);
-    int d2 = 1 * gerador.nextInt(9);
-
-
-
-    int num = n1 + n2 + n3 + n4 + n5;
-
-    String numeroConta = "" + n1 + n2 + n3 + n4 + n5 + "-" + d1 + d2;
-
-    private static int SEQUENCIA = 111111;
-
-    public Conta(Cliente cliente){
-        this.agencia = Conta.AGENCIA;
-        this.numero = numeroConta;
-        this.cliente = cliente;
+    protected Conta(Cliente cliente) {
+        this.cliente = Objects.requireNonNull(cliente, "Titular obrigatório.");
+        if (cliente.getNome() == null) throw new IllegalArgumentException("Nome do titular obrigatório.");
+        numero = Long.toString(SEQUENCIA.incrementAndGet());
     }
-    public void sacar(){}
-
-    public void depositar(){}
-
-    public void transferir(){}
-
-    @Override
-    public void sacar(double valor) {
-        this.saldo = saldo - valor;
+    private static BigDecimal validarValor(BigDecimal valor) {
+        if (valor == null || valor.signum() <= 0) throw new IllegalArgumentException("O valor deve ser maior que zero.");
+        try { return valor.setScale(2, RoundingMode.UNNECESSARY); }
+        catch (ArithmeticException error) { throw new IllegalArgumentException("Use no máximo duas casas decimais."); }
     }
-
-    @Override
-    public void depositar(double valor) {
-        this.saldo = saldo + valor;
+    private static BigDecimal decimal(double valor) {
+        if (!Double.isFinite(valor)) throw new IllegalArgumentException("Valor monetário inválido.");
+        return BigDecimal.valueOf(valor);
     }
-
-    @Override
-    public void transferir(double valor, Conta cDestino) {
-        this.sacar(valor);
-        cDestino.depositar(valor);
+    @Override public void depositar(double valor) { depositar(decimal(valor)); }
+    @Override public void sacar(double valor) { sacar(decimal(valor)); }
+    @Override public void transferir(double valor, Conta destino) { transferir(decimal(valor), destino); }
+    public void depositar(BigDecimal valor) {
+        BigDecimal quantia = validarValor(valor);
+        synchronized (OPERACOES) {
+            saldo = saldo.add(quantia);
+            historico.add("Depósito: +" + quantia.toPlainString());
+        }
     }
-
-    public int getAgencia() {
-        return agencia;
+    public void sacar(BigDecimal valor) {
+        BigDecimal quantia = validarValor(valor);
+        synchronized (OPERACOES) {
+            validarSaldo(quantia);
+            saldo = saldo.subtract(quantia);
+            historico.add("Saque: -" + quantia.toPlainString());
+        }
     }
-
-    public String getNumero() {
-        return numero;
+    public void transferir(BigDecimal valor, Conta destino) {
+        BigDecimal quantia = validarValor(valor);
+        if (destino == null || destino == this) throw new IllegalArgumentException("Selecione outra conta de destino.");
+        synchronized (OPERACOES) {
+            validarSaldo(quantia);
+            saldo = saldo.subtract(quantia);
+            destino.saldo = destino.saldo.add(quantia);
+            historico.add("Transferência para " + destino.numero + ": -" + quantia.toPlainString());
+            destino.historico.add("Transferência de " + numero + ": +" + quantia.toPlainString());
+        }
     }
-
-    public double getSaldo() {
-        return saldo;
+    private void validarSaldo(BigDecimal valor) {
+        if (saldo.compareTo(valor) < 0) throw new IllegalArgumentException("Saldo insuficiente.");
     }
-
+    public int getAgencia() { return agencia; }
+    public String getNumero() { return numero; }
+    /** Compatibilidade com os exemplos originais; prefira getSaldoDecimal(). */
+    public double getSaldo() { return getSaldoDecimal().doubleValue(); }
+    public BigDecimal getSaldoDecimal() { synchronized (OPERACOES) { return saldo; } }
+    public List<String> getHistorico() {
+        synchronized (OPERACOES) { return Collections.unmodifiableList(new ArrayList<>(historico)); }
+    }
     protected void imprimirInfo() {
-        System.out.println(String.format("Titular: %s", this.cliente.getNome()));
-
-        System.out.println(String.format("Agencia: %d", this.agencia));
-
-        System.out.println(String.format("Conta: %s", this.numero));
-
-        System.out.println(String.format("Saldo: %.2f", this.saldo));
+        imprimirSaldo();
+        System.out.println("Agência: " + agencia + " | Conta: " + numero);
+        for (String movimento : getHistorico()) System.out.println(movimento);
     }
-
     protected void imprimirSaldo() {
-        System.out.println(String.format("Titular: %s", this.cliente.getNome()));
-
-        System.out.println(String.format("Saldo: %.2f", this.saldo));
+        System.out.println("Titular: " + cliente.getNome());
+        System.out.println("Saldo: R$ " + getSaldoDecimal().toPlainString());
     }
-
     protected void imprimirConta() {
-        System.out.println(String.format("Titular: %s", this.cliente.getNome()));
-
-        System.out.println(String.format("Documento: %s", this.cliente.getCpf()));
-
-        System.out.println(String.format("Nascimento: %s", this.cliente.getData()));
-
-        System.out.println(String.format("Agencia: %d", this.agencia));
-
-        System.out.println(String.format("Conta: %s", this.numero));
-
+        System.out.println("Titular: " + cliente.getNome());
+        String cpf = cliente.getCpf();
+        System.out.println("Documento: " + (cpf == null ? "não informado" : "***.***.***-" + cpf.substring(9)));
+        System.out.println("Agência: " + agencia + " | Conta: " + numero);
     }
-
-
-
-
 }

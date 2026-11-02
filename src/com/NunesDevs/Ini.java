@@ -1,155 +1,53 @@
 package com.NunesDevs;
 
-import java.util.Locale;
+import java.math.BigDecimal;
 import java.util.Scanner;
+import java.util.function.Consumer;
 
-public class Ini {
-
-
+public final class Ini {
+    private Ini() { }
     public static void main(String[] args) {
-
-        try (Scanner sc = new Scanner(System.in)) {
-            sc.useLocale(Locale.US);
-
-        Cliente clinovo = new Cliente();
-        System.out.println("Digite seu nome: ");
-        clinovo.setNome(sc.next());
-        System.out.println("Digite seu cpf: ");
-        clinovo.setCpf(sc.next());
-        System.out.println("Digite sua data de nascimento: ");
-        clinovo.setData(sc.next());
-
-        Conta cc = new ContaC(clinovo);
-        Conta cp = new ContaP(clinovo);
-        cc.imprimirExtrato();
-        System.out.println();
-        cp.imprimirExtrato();
-
-
-        do {
-
-            System.out.println("################");
-            System.out.println("# PAINEL BANCO #");
-            System.out.println("################");
-            System.out.println("\n"
-                    + "1 - Depositar.\n"
-                    + "2 - Sacar.\n"
-                    + "3 - Transferir.\n"
-                    + "4 - Saldo.\n"
-                    + "5 - Dados conta.\n"
-                    + "6 - Encerrar.");
-            switch (sc.nextInt()) {
-
-                case 1:
-                    System.out.println("###################");
-                    System.out.println("# PAINEL DEPOSITO #");
-                    System.out.println("###################");
-                    System.out.println("Qual conta deseja depositar?");
-
-                    System.out.println("\n"
-                            + "1 - Conta corrente.\n"
-                            + "2 - Conta poupança.");
-                    switch (sc.nextInt()){
-                    case 1:
-                        System.out.println("Digite o valor a ser depositado: ");
-                        cc.depositar(sc.nextDouble());
-                        System.out.println("Digite 1 para continuar.");
-                        continue;
-
-                        case 2:
-                        System.out.println("Digite o valor a ser depositado: ");
-                        cp.depositar(sc.nextDouble());
-                            System.out.println("Digite 1 para continuar.");
-
-                            continue;
-
-                        default:
-                        System.out.println("Opção invalida!");
-                            System.out.println("Digite 1 para continuar.");
-
-                            continue;
+        try (Scanner input = new Scanner(System.in, "UTF-8")) {
+            Cliente cliente = new Cliente();
+            if (!lerCadastro(input, "Digite seu nome: ", cliente::setNome)
+                || !lerCadastro(input, "Digite seu CPF (apenas para simulação): ", cliente::setCpf)
+                || !lerCadastro(input, "Nascimento (dd/MM/aaaa): ", cliente::setData)) return;
+            Conta corrente = new ContaC(cliente);
+            Conta poupanca = new ContaP(cliente);
+            while (true) {
+                String option = ler(input, "\n1 - Depositar\n2 - Sacar\n3 - Transferir\n4 - Extrato\n5 - Dados da conta\n6 - Encerrar");
+                if (option == null || option.equals("6")) break;
+                try {
+                    if (option.equals("4")) { corrente.imprimirExtrato(); poupanca.imprimirExtrato(); continue; }
+                    if (option.equals("5")) { corrente.imprimirConta(); poupanca.imprimirConta(); continue; }
+                    if (!option.matches("[123]")) { System.out.println("Opção inválida."); continue; }
+                    String account = ler(input, "Conta de origem/operação: 1 - Corrente | 2 - Poupança");
+                    if (account == null) break;
+                    if (!account.matches("[12]")) { System.out.println("Conta inválida."); continue; }
+                    Conta origem = account.equals("1") ? corrente : poupanca;
+                    String amount = ler(input, "Valor (ex.: 10,50, sem separador de milhar): ");
+                    if (amount == null) break;
+                    if (!amount.matches("[0-9]+([.,][0-9]{1,2})?")) throw new IllegalArgumentException("Valor inválido; use no máximo duas casas decimais.");
+                    BigDecimal valor = new BigDecimal(amount.replace(',', '.'));
+                    if (option.equals("1")) origem.depositar(valor);
+                    else if (option.equals("2")) origem.sacar(valor);
+                    else origem.transferir(valor, origem == corrente ? poupanca : corrente);
+                    System.out.println("Operação concluída.");
+                } catch (IllegalArgumentException error) { System.out.println(error.getMessage()); }
             }
-                case 2:
-                    System.out.println("################");
-                    System.out.println("# PAINEL SAQUE #");
-                    System.out.println("################");
-                    System.out.println("Qual conta deseja sacar?");
-                    System.out.println("\n"
-                            + "1 - Conta corrente.\n"
-                            + "2 - Conta poupança.");
-                    switch (sc.nextInt()) {
-                        case 1:
-                            System.out.println("Digite o valor a ser retirado: ");
-                            cc.sacar(sc.nextDouble());
-                            System.out.println("Digite 1 para continuar.");
-
-                            continue;
-
-                        case 2:
-                            System.out.println("Digite o valor a ser retirado: ");
-                            cp.sacar(sc.nextDouble());
-                            System.out.println("Digite 1 para continuar.");
-
-                            continue;
-
-                        default:
-                            System.out.println("Opção invalida!");
-                            System.out.println("Digite 1 para continuar.");
-
-                            continue;
-                    }
-                case 3:
-                    System.out.println("#####################");
-                    System.out.println("# PAINEL TRANSFERIR #");
-                    System.out.println("#####################");
-                    System.out.println("Para qual conta deseja transferir?");
-                    System.out.println("\n"
-                            + "1 - Conta corrente.\n"
-                            + "2 - Conta poupança.");
-                    switch (sc.nextInt()) {
-                        case 1:
-                            System.out.println("Digite o valor a ser transferido: ");
-                            cc.transferir(sc.nextDouble(), cp);
-                            System.out.println("Digite 1 para continuar.");
-
-                            continue;
-
-                        case 2:
-                            System.out.println("Digite o valor a ser transferido: ");
-                            cp.transferir(sc.nextDouble(), cc);
-                            System.out.println("Digite 1 para continuar.");
-
-                            continue;
-
-                        default:
-                            System.out.println("Opção invalida!");
-                            System.out.println("Digite 1 para continuar.");
-
-                            continue;
-                    }
-                case 4:
-                    System.out.println("#########");
-                    System.out.println("# SALDO #");
-                    System.out.println("#########");
-
-                    cc.imprimirSaldo();
-                    System.out.println();
-                    cp.imprimirSaldo();
-                    System.out.println("Digite 1 para concluir.");
-
-                break;
-
-                case 5:
-                    System.out.println("DADOS");
-                    cc.imprimirConta();
-                    System.out.println();
-                    cp.imprimirConta();
-                    System.out.println("Digite 1 para concluir.");
-
-
-                break;
-            }
-        } while (sc.nextInt() != 6);
+            System.out.println("Sessão encerrada. Dados da simulação descartados.");
+        }
     }
+    private static String ler(Scanner input, String prompt) {
+        System.out.println(prompt);
+        return input.hasNextLine() ? input.nextLine().trim() : null;
+    }
+    private static boolean lerCadastro(Scanner input, String prompt, Consumer<String> setter) {
+        while (true) {
+            String value = ler(input, prompt);
+            if (value == null) return false;
+            try { setter.accept(value); return true; }
+            catch (IllegalArgumentException error) { System.out.println(error.getMessage()); }
+        }
     }
 }
