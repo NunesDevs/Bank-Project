@@ -40,3 +40,9 @@ Os documentos automáticos de maio em `docs/ai-context` são um registro histór
 ## Evidência da revisão
 
 Build Java 8 compatível, 25 verificações bancárias, JAR executável com fluxo de depósito/transferência/extrato e encerramento por EOF aprovados.
+
+## CI — 2026-11-08
+
+O workflow `.github/workflows/ci.yml` valida a stack e os testes reais deste projeto em push/PR para `main` e por disparo manual. Usa ações oficiais fixadas por SHA, permissão `contents: read` e checkout sem credenciais persistentes. Não faz deploy nem publica pacotes.
+
+A release `v2026.11.8` e seus binários continuam associados ao código `4aaecf84b628a0b653d79233d12f9bf3728e3cd8`. O commit de workflow/documentação é posterior e não muda os artefatos já compilados. Resultado da execução remota disponível na aba Actions; não confundir configuração do workflow com aprovação de uma execução.
